@@ -11,14 +11,22 @@ npm run dev
 
 Use **Chrome or Edge** (Chromium) and allow the microphone when you turn the mic on. Speech recognition needs a [secure context](https://developer.mozilla.org/en-US/docs/Web/API/Web_Speech_API) (`https://` or `http://localhost`).
 
-## Docker (bonus)
+## Docker
+
+**Build and run (port 8080 → container 80):**
 
 ```bash
-docker build -t voice-calculator .
-docker run --rm -p 8080:80 voice-calculator
+docker build -t voice-calculator:latest .
+docker run --rm -p 8080:80 voice-calculator:latest
 ```
 
-Open `http://localhost:8080`. For microphone access from another machine, serve over HTTPS or use localhost.
+**Or with Compose:**
+
+```bash
+docker compose up --build
+```
+
+Then open `http://localhost:8080`. The Web Speech API needs a [secure context](https://developer.mozilla.org/en-US/docs/Web/API/Web_Speech_API); use `localhost` or HTTPS.
 
 ## GitHub
 

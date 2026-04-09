@@ -31,48 +31,43 @@ type CalcKey = {
   op?: OperationId
   digit?: string
   speak: string
+  /** Sağdaki işlem sütunu: fotoğrafta daha açık gri */
+  opCol?: boolean
 }
 
 const KEYS: CalcKey[] = [
-  { id: 'ac', kind: 'clear', label: 'AC', speak: 'clear' },
-  { id: 'del', kind: 'back', label: '⌫', speak: 'delete' },
-  { id: 'pct', kind: 'percent', label: '%', speak: 'percent' },
+  { id: '7', kind: 'digit', label: '7', digit: '7', speak: DIGIT_SPOKEN[7] },
+  { id: '8', kind: 'digit', label: '8', digit: '8', speak: DIGIT_SPOKEN[8] },
+  { id: '9', kind: 'digit', label: '9', digit: '9', speak: DIGIT_SPOKEN[9] },
   {
     id: 'div',
     kind: 'op',
     label: '÷',
     op: 'divide',
     speak: 'over',
+    opCol: true,
   },
-  { id: '7', kind: 'digit', label: '7', digit: '7', speak: DIGIT_SPOKEN[7] },
-  { id: '8', kind: 'digit', label: '8', digit: '8', speak: DIGIT_SPOKEN[8] },
-  { id: '9', kind: 'digit', label: '9', digit: '9', speak: DIGIT_SPOKEN[9] },
+  { id: '4', kind: 'digit', label: '4', digit: '4', speak: DIGIT_SPOKEN[4] },
+  { id: '5', kind: 'digit', label: '5', digit: '5', speak: DIGIT_SPOKEN[5] },
+  { id: '6', kind: 'digit', label: '6', digit: '6', speak: DIGIT_SPOKEN[6] },
   {
     id: 'mul',
     kind: 'op',
     label: '×',
     op: 'multiply',
     speak: 'times',
+    opCol: true,
   },
-  { id: '4', kind: 'digit', label: '4', digit: '4', speak: DIGIT_SPOKEN[4] },
-  { id: '5', kind: 'digit', label: '5', digit: '5', speak: DIGIT_SPOKEN[5] },
-  { id: '6', kind: 'digit', label: '6', digit: '6', speak: DIGIT_SPOKEN[6] },
+  { id: '1', kind: 'digit', label: '1', digit: '1', speak: DIGIT_SPOKEN[1] },
+  { id: '2', kind: 'digit', label: '2', digit: '2', speak: DIGIT_SPOKEN[2] },
+  { id: '3', kind: 'digit', label: '3', digit: '3', speak: DIGIT_SPOKEN[3] },
   {
     id: 'sub',
     kind: 'op',
     label: '−',
     op: 'subtract',
     speak: 'minus',
-  },
-  { id: '1', kind: 'digit', label: '1', digit: '1', speak: DIGIT_SPOKEN[1] },
-  { id: '2', kind: 'digit', label: '2', digit: '2', speak: DIGIT_SPOKEN[2] },
-  { id: '3', kind: 'digit', label: '3', digit: '3', speak: DIGIT_SPOKEN[3] },
-  {
-    id: 'add',
-    kind: 'op',
-    label: '+',
-    op: 'add',
-    speak: 'plus',
+    opCol: true,
   },
   {
     id: '0',
@@ -80,7 +75,6 @@ const KEYS: CalcKey[] = [
     label: '0',
     digit: '0',
     speak: DIGIT_SPOKEN[0],
-    span: 2,
   },
   { id: 'dot', kind: 'decimal', label: '.', speak: 'point' },
   {
@@ -89,7 +83,46 @@ const KEYS: CalcKey[] = [
     label: '=',
     speak: 'is',
   },
+  {
+    id: 'add',
+    kind: 'op',
+    label: '+',
+    op: 'add',
+    speak: 'plus',
+    opCol: true,
+  },
 ]
+
+function MicIcon() {
+  return (
+    <svg
+      className="calc-mock__mic-icon"
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden
+    >
+      <path
+        d="M12 15a4 4 0 0 0 4-4V7a4 4 0 1 0-8 0v4a4 4 0 0 0 4 4Z"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M5 11a7 7 0 0 0 14 0"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+      <path
+        d="M12 19v2M9 22h6"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+    </svg>
+  )
+}
 
 export function VoiceCalculator() {
   const calc = useCalculator()
@@ -128,6 +161,12 @@ export function VoiceCalculator() {
           break
         case 'equals':
           h.inputEquals()
+          break
+        case 'clear':
+          h.reset()
+          break
+        case 'backspace':
+          h.backspace()
           break
         default:
           break
@@ -185,62 +224,57 @@ export function VoiceCalculator() {
   }, [])
 
   return (
-    <div className="voice-calculator">
-      <header className="voice-calculator__header">
-        <h1>Voice calculator</h1>
-        <p className="voice-calculator__hint">
-          Use the mic for spoken commands (e.g. “five”, “plus”, “two”, “is”) or
-          tap keys for spoken feedback.
-        </p>
-      </header>
-
-      <div className="voice-calculator__shell">
-        <button
-          type="button"
-          className={`voice-calculator__mic ${listening ? 'voice-calculator__mic--on' : ''}`}
-          onClick={toggle}
-          disabled={!supported}
-          aria-pressed={listening}
-          title={
-            supported
-              ? listening
-                ? 'Stop voice input'
-                : 'Start voice input'
-              : 'Speech recognition not available'
-          }
-        >
-          <span className="voice-calculator__mic-icon" aria-hidden>
-            {listening ? '●' : '🎤'}
-          </span>
-          <span className="voice-calculator__mic-label">
-            {listening ? 'Listening' : 'Mic'}
-          </span>
-        </button>
-
-        <div className="voice-calculator__panel">
+    <div className="calc-mock">
+      <div
+        className="calc-mock__shell"
+        role="application"
+        aria-label="Sesli hesap makinesi"
+      >
+        {/* Üst: sol boşluk + ekran (sadece 4 tuş sütunu genişliğinde) */}
+        <div className="calc-mock__display-row">
+          <div className="calc-mock__gutter" aria-hidden />
           <output
-            className="voice-calculator__display"
+            className="calc-mock__display"
             htmlFor="calc-keys"
             aria-live="polite"
           >
             {calc.display}
           </output>
+        </div>
 
-          {!supported && (
-            <p className="voice-calculator__warn">
-              Voice input needs a Chromium-based browser (Chrome, Edge) with
-              microphone access.
-            </p>
-          )}
-          {error && <p className="voice-calculator__error">{error}</p>}
+        {/* Alt: 5×4 ızgara — (1,1) ve (1,4) boş, mic (1,2)-(1,3) ortada iki satır */}
+        <div className="calc-mock__pad">
+          <div className="calc-mock__pad-empty calc-mock__pad-empty--tl" />
+          <button
+            type="button"
+            className={`calc-mock__mic ${listening ? 'calc-mock__mic--on' : ''}`}
+            onClick={toggle}
+            disabled={!supported}
+            aria-pressed={listening}
+            title={
+              supported
+                ? listening
+                  ? 'Dinlemeyi durdur'
+                  : 'Ses girişi'
+                : 'Tarayıcıda ses tanıma yok'
+            }
+          >
+            <MicIcon />
+          </button>
+          <div className="calc-mock__pad-empty calc-mock__pad-empty--bl" />
 
-          <div className="voice-calculator__keys" id="calc-keys">
+          <div className="calc-mock__keys" id="calc-keys">
             {KEYS.map((key) => (
               <button
                 key={key.id}
                 type="button"
-                className={`voice-calculator__key voice-calculator__key--${key.kind}`}
-                style={key.span ? { gridColumn: `span ${key.span}` } : undefined}
+                className={[
+                  'calc-mock__key',
+                  `calc-mock__key--${key.kind}`,
+                  key.opCol ? 'calc-mock__key--opcol' : '',
+                ]
+                  .filter(Boolean)
+                  .join(' ')}
                 onClick={() => runKey(key)}
               >
                 {key.label}
@@ -248,7 +282,19 @@ export function VoiceCalculator() {
             ))}
           </div>
         </div>
+
+        {!supported && (
+          <p className="calc-mock__warn">
+            Ses için Chrome veya Edge; mikrofon izni gerekir.
+          </p>
+        )}
+        {error && <p className="calc-mock__error">{error}</p>}
       </div>
+
+      <p className="calc-mock__hint">
+        İngilizce: “five”, “plus”, “is”. <strong>clear</strong> /{' '}
+        <strong>delete</strong>.
+      </p>
     </div>
   )
 }

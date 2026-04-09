@@ -1,150 +1,195 @@
-.voice-calculator {
-  padding: 24px 20px 48px;
-  text-align: left;
-  max-width: 420px;
-  margin: 0 auto;
-}
+/**
+ * Windows mavisi #0078D7; tuşlar düz tek renk (gölge/gradient yok).
+ */
 
-.voice-calculator__header h1 {
-  font-size: 28px;
-  margin: 0 0 8px;
-  letter-spacing: -0.5px;
-}
-
-.voice-calculator__hint {
-  margin: 0 0 20px;
-  font-size: 15px;
-  line-height: 1.45;
-  color: var(--text);
-}
-
-.voice-calculator__shell {
-  display: flex;
-  align-items: stretch;
-  gap: 12px;
-}
-
-.voice-calculator__mic {
-  flex: 0 0 72px;
+.calc-mock {
+  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  padding: 12px 8px;
-  border-radius: 14px;
-  border: 1px solid var(--border);
-  background: var(--social-bg);
-  color: var(--text-h);
-  cursor: pointer;
-  transition:
-    background 0.2s,
-    border-color 0.2s,
-    box-shadow 0.2s;
-  font: inherit;
+  min-height: 100%;
+  padding: min(4vh, 28px) 16px 20px;
+  box-sizing: border-box;
 }
 
-.voice-calculator__mic:disabled {
+.calc-mock__shell {
+  width: 100%;
+  max-width: 298px;
+}
+
+/* ---- Üst satır: sol boşluk + ekran (fotoğraftaki gibi sadece 4 sütun üzerinde) ---- */
+.calc-mock__display-row {
+  display: grid;
+  grid-template-columns: 68px 1fr;
+  column-gap: 10px;
+  margin-bottom: 10px;
+}
+
+.calc-mock__gutter {
+  /* Mikrofon sütunu ile aynı genişlik — hizalama */
+  min-width: 68px;
+}
+
+.calc-mock__display {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 52px;
+  padding: 10px 12px;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-size: 2rem;
+  font-weight: 400;
+  line-height: 1.15;
+  text-align: right;
+  color: #000;
+  background: #fff;
+  border: 1px solid #d0d0d0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* ---- Tuş alanı: 5 sütun × 4 satır; satır yüksekliği tuş genişliğiyle eşit → kare ---- */
+.calc-mock__pad {
+  display: grid;
+  grid-template-columns: 68px repeat(4, minmax(0, 1fr));
+  grid-template-rows: repeat(4, auto);
+  gap: 8px 10px;
+  align-items: stretch;
+}
+
+.calc-mock__pad-empty {
+  grid-column: 1;
+  pointer-events: none;
+}
+
+.calc-mock__pad-empty--tl {
+  grid-row: 1;
+}
+
+.calc-mock__pad-empty--bl {
+  grid-row: 4;
+}
+
+.calc-mock__mic {
+  grid-column: 1;
+  grid-row: 2 / span 2;
+  place-self: center;
+  width: 56px;
+  height: 56px;
+  padding: 0;
+  border: 2px solid #1a1a1a;
+  border-radius: 50%;
+  background: #a3a3a3;
+  color: #0a0a0a;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: none;
+  transition: opacity 0.12s;
+}
+
+.calc-mock__mic:hover:not(:disabled) {
+  opacity: 0.92;
+}
+
+.calc-mock__mic:active:not(:disabled) {
+  opacity: 0.85;
+}
+
+.calc-mock__mic:disabled {
   opacity: 0.45;
   cursor: not-allowed;
 }
 
-.voice-calculator__mic:not(:disabled):hover {
-  box-shadow: var(--shadow);
+.calc-mock__mic--on {
+  background: #81c784;
+  border-color: #2e7d32;
+  color: #1b5e20;
+  box-shadow: none;
 }
 
-.voice-calculator__mic--on {
-  border-color: var(--accent-border);
-  background: var(--accent-bg);
-  color: var(--accent);
+.calc-mock__mic-icon {
+  width: 26px;
+  height: 26px;
 }
 
-.voice-calculator__mic-icon {
-  font-size: 26px;
-  line-height: 1;
-}
-
-.voice-calculator__mic-label {
-  font-size: 12px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-
-.voice-calculator__panel {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.voice-calculator__display {
-  display: block;
-  font-family: var(--mono);
-  font-size: 32px;
-  line-height: 1.2;
-  padding: 16px 14px;
-  border-radius: 12px;
-  border: 1px solid var(--border);
-  background: var(--code-bg);
-  color: var(--text-h);
-  text-align: right;
-  min-height: 1.2em;
-}
-
-.voice-calculator__warn,
-.voice-calculator__error {
-  margin: 0;
-  font-size: 13px;
-}
-
-.voice-calculator__error {
-  color: #b91c1c;
-}
-
-@media (prefers-color-scheme: dark) {
-  .voice-calculator__error {
-    color: #fca5a5;
-  }
-}
-
-.voice-calculator__keys {
+/* 16 tuş: 4×4, sağ üst köşeden itibaren */
+.calc-mock__keys {
+  grid-column: 2 / 6;
+  grid-row: 1 / 5;
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
+  grid-template-rows: repeat(4, 1fr);
+  gap: 8px 10px;
+  min-height: 0;
 }
 
-.voice-calculator__key {
-  padding: 14px 8px;
-  border-radius: 10px;
-  border: 1px solid var(--border);
-  background: var(--bg);
-  color: var(--text-h);
-  font-size: 18px;
-  font-weight: 500;
+/* Tuşlar: düz renk, kare — orta ton gri */
+.calc-mock__key {
+  margin: 0;
+  border: none;
+  border-radius: 0;
+  -webkit-appearance: none;
+  appearance: none;
+  box-sizing: border-box;
+  width: 100%;
+  aspect-ratio: 1;
+  min-width: 0;
+  min-height: 0;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-size: 1.35rem;
+  font-weight: 600;
+  color: #fff;
   cursor: pointer;
-  transition:
-    background 0.15s,
-    border-color 0.15s,
-    transform 0.08s;
+  background: #858585;
+  box-shadow: none;
+  text-shadow: none;
+  transition: opacity 0.12s;
 }
 
-.voice-calculator__key:hover {
-  background: var(--social-bg);
+.calc-mock__key:hover {
+  opacity: 0.92;
 }
 
-.voice-calculator__key:active {
-  transform: scale(0.97);
+.calc-mock__key:active {
+  opacity: 0.82;
 }
 
-.voice-calculator__key--op,
-.voice-calculator__key--equals {
-  background: var(--accent-bg);
-  border-color: var(--accent-border);
-  color: var(--accent);
+/* Sağ sütun: işlem tuşları — biraz daha açık gri */
+.calc-mock__key--opcol {
+  background: #9e9e9e;
 }
 
-.voice-calculator__key--clear {
-  font-size: 15px;
+/* = biraz daha koyu mavi */
+.calc-mock__key--equals {
+  background: #1565c0;
+}
+
+.calc-mock__warn,
+.calc-mock__error {
+  margin: 10px 0 0;
+  font-size: 11px;
+  line-height: 1.35;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.calc-mock__error {
+  color: #ffcdd2;
+}
+
+.calc-mock__hint {
+  margin: 14px 0 0;
+  max-width: 298px;
+  font-size: 11px;
+  line-height: 1.4;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.calc-mock__hint strong {
+  color: #fff;
+  font-weight: 600;
 }

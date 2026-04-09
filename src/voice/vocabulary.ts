@@ -25,6 +25,10 @@ const WORD_ALIASES: Record<string, string> = {
   zero: 'zero',
   won: 'one',
   one: 'one',
+  /** Common mis-hearings of "one" in Web Speech API */
+  wun: 'one',
+  wan: 'one',
+  on: 'one',
   to: 'two',
   two: 'two',
   too: 'two',
@@ -65,20 +69,57 @@ const OP_WORDS: Record<string, OperationId | 'equals' | 'decimal'> = {
   '.': 'decimal',
 }
 
+/** Normalize one STT token (avoid \\p{} regex — older engines / minifiers can break it). */
 export function normalizeToken(raw: string): string {
-  return raw
-    .toLowerCase()
-    .replace(/[,.'"]/g, '')
-    .trim()
+  let s = raw.toLowerCase().trim()
+  s = s.replace(/[,;'"’`]/g, '')
+  /* Trim common leading/trailing noise without stripping letters/digits inside words */
+  s = s.replace(/^[\s.:;!?()[\]{}«»]+/, '').replace(/[\s.:;!?()[\]{}«»]+$/, '')
+  return s.trim()
 }
 
 export function tokenToDigit(token: string): string | null {
   const n = normalizeToken(token)
+  if (!n) return null
   const viaAlias = WORD_ALIASES[n]
   const key = viaAlias ?? n
   if (WORD_TO_DIGIT.has(key)) return WORD_TO_DIGIT.get(key)!
-  if (/^\d$/.test(n)) return n
+  /* ASCII or fullwidth digit */
+  const ascii = n.replace(/[\uFF10-\uFF19]/g, (ch) =>
+    String.fromCharCode(ch.charCodeAt(0) - 0xff10 + 0x30),
+  )
+  if (/^\d$/.test(ascii)) return ascii
   return null
+}
+
+export type ControlAction = 'clear' | 'backspace'
+
+/** Voice-only: all-clear vs delete last digit (matches AC / ⌫ buttons). */
+export function tokenToControl(token: string): ControlAction | null {
+  const n = normalizeToken(token)
+  if (!n) return null
+  const map: Record<string, ControlAction> = {
+    clear: 'clear',
+    reset: 'clear',
+    all: 'clear',
+    ac: 'clear',
+    erase: 'clear',
+    empty: 'clear',
+    delete: 'backspace',
+    back: 'backspace',
+    backspace: 'backspace',
+    del: 'backspace',
+    remove: 'backspace',
+    /** spoken ⌫ */
+    scratch: 'backspace',
+    /* Turkish (mic locale / mixed speech) */
+    temizle: 'clear',
+    sıfırla: 'clear',
+    sifirla: 'clear',
+    sil: 'backspace',
+    geri: 'backspace',
+  }
+  return map[n] ?? null
 }
 
 export function tokenToCommand(

@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   normalizeToken,
   tokenToCommand,
+  tokenToControl,
   tokenToDigit,
 } from '../voice/vocabulary'
 
@@ -15,15 +16,54 @@ export type VoiceCommand =
   | { type: 'decimal' }
   | { type: 'op'; op: 'add' | 'subtract' | 'multiply' | 'divide' }
   | { type: 'equals' }
+  | { type: 'clear' }
+  | { type: 'backspace' }
+
+/** Insert spaces where the engine glued words (e.g. "oneplus" → "one plus"). */
+function expandGluedWords(text: string): string {
+  let s = text.toLowerCase()
+  s = s.replace(/[,;]/g, ' ')
+  /* digit word directly followed by an operator word */
+  s = s.replace(
+    /(zero|one|two|three|four|five|six|seven|eight|nine|oh|won|wun|wan)(plus|minus|times|over|is)\b/gi,
+    '$1 $2',
+  )
+  /* operator word directly followed by a digit word */
+  s = s.replace(
+    /\b(plus|minus|times|over)\s*(zero|one|two|three|four|five|six|seven|eight|nine|oh|won|wun|wan)\b/gi,
+    '$1 $2',
+  )
+  /* "is" + result digit chain start */
+  s = s.replace(
+    /\b(is)\s*(zero|one|two|three|four|five|six|seven|eight|nine|oh|won|wun|wan)\b/gi,
+    '$1 $2',
+  )
+  return s.replace(/\s+/g, ' ').trim()
+}
+
+function splitTranscript(text: string): string[] {
+  const normalized = expandGluedWords(text)
+  return normalized.split(/\s+/).filter(Boolean)
+}
 
 function parseTranscript(text: string): VoiceCommand[] {
   const raw = text.trim()
   if (!raw) return []
 
-  const tokens = raw.split(/\s+/).map(normalizeToken).filter(Boolean)
+  const tokens = splitTranscript(raw).map(normalizeToken).filter(Boolean)
   const out: VoiceCommand[] = []
 
   for (const t of tokens) {
+    const control = tokenToControl(t)
+    if (control === 'clear') {
+      out.push({ type: 'clear' })
+      continue
+    }
+    if (control === 'backspace') {
+      out.push({ type: 'backspace' })
+      continue
+    }
+
     const digit = tokenToDigit(t)
     if (digit !== null) {
       out.push({ type: 'digit', value: digit })
@@ -58,6 +98,8 @@ export function useSpeechRecognition(
   const [listening, setListening] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const recRef = useRef<WebSpeechRecognition | null>(null)
+  const onCommandsRef = useRef(onCommands)
+  onCommandsRef.current = onCommands
 
   useEffect(() => {
     const SR =
@@ -85,16 +127,20 @@ export function useSpeechRecognition(
 
     const rec = new SR()
     rec.continuous = true
-    rec.interimResults = true
+    /* interim=true keeps results non-final until long pause — nothing was processed */
+    rec.interimResults = false
     rec.lang = 'en-US'
 
     rec.onresult = (event: SpeechRecognitionEvent) => {
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const part = event.results[i]
-        if (!part.isFinal) continue
-        const segment = part[0].transcript
-        const cmds = parseTranscript(segment)
-        if (cmds.length) onCommands(cmds)
+      try {
+        let chunk = ''
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          chunk += event.results[i][0].transcript
+        }
+        const cmds = parseTranscript(chunk)
+        if (cmds.length) onCommandsRef.current(cmds)
+      } catch {
+        /* ignore parse errors so recognition keeps running */
       }
     }
 
@@ -126,7 +172,7 @@ export function useSpeechRecognition(
     } catch {
       setError('Could not start the microphone.')
     }
-  }, [onCommands, stop])
+  }, [stop])
 
   const toggle = useCallback(() => {
     if (listening) stop()
