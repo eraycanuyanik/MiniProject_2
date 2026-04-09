@@ -85,16 +85,17 @@ export function useSpeechRecognition(
 
     const rec = new SR()
     rec.continuous = true
-    rec.interimResults = false
+    rec.interimResults = true
     rec.lang = 'en-US'
 
     rec.onresult = (event: SpeechRecognitionEvent) => {
-      let combined = ''
       for (let i = event.resultIndex; i < event.results.length; i++) {
-        combined += event.results[i][0].transcript
+        const part = event.results[i]
+        if (!part.isFinal) continue
+        const segment = part[0].transcript
+        const cmds = parseTranscript(segment)
+        if (cmds.length) onCommands(cmds)
       }
-      const cmds = parseTranscript(combined)
-      if (cmds.length) onCommands(cmds)
     }
 
     rec.onerror = (e: SpeechRecognitionErrorEvent) => {
